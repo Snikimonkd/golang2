@@ -1,6 +1,5 @@
 package main
 
-// сюда писать код
 import (
 	"sort"
 	"strconv"
@@ -41,14 +40,14 @@ func SingleHash(in, out chan interface{}) {
 			var wg1 sync.WaitGroup
 			wg1.Add(2)
 			var buf1 string
-			go func(str string, huy1 *string) {
+			go func(str string, res *string) {
 				defer wg1.Done()
-				*huy1 = DataSignerCrc32(str)
+				*res = DataSignerCrc32(str)
 			}(stringData, &buf1)
 			var buf2 string
-			go func(str string, huy *string) {
+			go func(str string, res *string) {
 				defer wg1.Done()
-				*huy = DataSignerCrc32(str)
+				*res = DataSignerCrc32(str)
 			}(md5Data, &buf2)
 			wg1.Wait()
 			out <- buf1 + "~" + buf2
