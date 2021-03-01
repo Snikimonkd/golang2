@@ -98,7 +98,3 @@ func CombineResults(in, out chan interface{}) {
 	newres = strings.TrimRight(newres, "_")
 	out <- newres
 }
-
-func main() {
-
-}
