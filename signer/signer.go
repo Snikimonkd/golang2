@@ -30,30 +30,32 @@ func smth(buf string, out chan interface{}) {
 }
 
 func SingleHash(in, out chan interface{}) {
-	var wg sync.WaitGroup
+	var (
+		mainWG   sync.WaitGroup
+		nestedWG sync.WaitGroup
+		crc32    string
+		crc32Md5 string
+	)
 	for data := range in {
-		wg.Add(1)
+		mainWG.Add(1)
 		stringData := strconv.Itoa(data.(int))
 		md5Data := DataSignerMd5(stringData)
 		go func(stringData string, md5Data string, out chan interface{}) {
-			defer wg.Done()
-			var wg1 sync.WaitGroup
-			wg1.Add(2)
-			var buf1 string
+			defer mainWG.Done()
+			nestedWG.Add(2)
 			go func(str string, res *string) {
-				defer wg1.Done()
+				defer nestedWG.Done()
 				*res = DataSignerCrc32(str)
-			}(stringData, &buf1)
-			var buf2 string
+			}(stringData, &crc32)
 			go func(str string, res *string) {
-				defer wg1.Done()
+				defer nestedWG.Done()
 				*res = DataSignerCrc32(str)
-			}(md5Data, &buf2)
-			wg1.Wait()
-			out <- buf1 + "~" + buf2
+			}(md5Data, &crc32Md5)
+			nestedWG.Wait()
+			out <- crc32 + "~" + crc32Md5
 		}(stringData, md5Data, out)
 	}
-	wg.Wait()
+	mainWG.Wait()
 }
 
 func MultiHash(in, out chan interface{}) {
