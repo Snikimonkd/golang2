@@ -25,16 +25,9 @@ func ExecutePipeline(jobs ...job) {
 	wg.Wait()
 }
 
-func smth(buf string, out chan interface{}) {
-	out <- buf
-}
-
 func SingleHash(in, out chan interface{}) {
 	var (
-		mainWG   sync.WaitGroup
-		nestedWG sync.WaitGroup
-		crc32    string
-		crc32Md5 string
+		mainWG sync.WaitGroup
 	)
 	for data := range in {
 		mainWG.Add(1)
@@ -42,6 +35,11 @@ func SingleHash(in, out chan interface{}) {
 		md5Data := DataSignerMd5(stringData)
 		go func(stringData string, md5Data string, out chan interface{}) {
 			defer mainWG.Done()
+			var (
+				nestedWG sync.WaitGroup
+				crc32    string
+				crc32Md5 string
+			)
 			nestedWG.Add(2)
 			go func(str string, res *string) {
 				defer nestedWG.Done()
@@ -59,30 +57,32 @@ func SingleHash(in, out chan interface{}) {
 }
 
 func MultiHash(in, out chan interface{}) {
-	var wg sync.WaitGroup
+	var mainWG sync.WaitGroup
 	for data := range in {
-		wg.Add(1)
+		mainWG.Add(1)
 		var buf [6]string
 		go func(data interface{}, out chan interface{}) {
-			defer wg.Done()
-			var wg1 sync.WaitGroup
+			defer mainWG.Done()
+			var (
+				nestedWG sync.WaitGroup
+				res      string
+			)
 			for i := 0; i < 6; i++ {
-				wg1.Add(1)
+				nestedWG.Add(1)
 				go func(i int, data interface{}) {
-					defer wg1.Done()
+					defer nestedWG.Done()
 					th := strconv.Itoa(i)
 					buf[i] = DataSignerCrc32(th + data.(string))
 				}(i, data)
 			}
-			wg1.Wait()
-			var res string
+			nestedWG.Wait()
 			for _, v := range buf {
 				res += v
 			}
 			out <- res
 		}(data, out)
 	}
-	wg.Wait()
+	mainWG.Wait()
 }
 
 func CombineResults(in, out chan interface{}) {
