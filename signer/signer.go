@@ -91,10 +91,10 @@ func CombineResults(in, out chan interface{}) {
 		res = append(res, data.(string))
 	}
 	sort.Strings(res)
-	var newres string
+	var newRes string
 	for _, sortData := range res {
-		newres += sortData + "_"
+		newRes += sortData + "_"
 	}
-	newres = strings.TrimRight(newres, "_")
-	out <- newres
+	newRes = strings.TrimRight(newRes, "_")
+	out <- newRes
 }
